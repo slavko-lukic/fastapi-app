@@ -6,7 +6,7 @@ from app.api.routes import chat
 
 app = FastAPI(title="Chatbot API")
 
-# Allow everything for now (you can tighten this later)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
