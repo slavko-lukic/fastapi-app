@@ -1,0 +1,34 @@
+Project: Customer Support Chatbot
+
+This project is a FastAPI-based backend that exposes a chatbot API.
+The chatbot uses Amazon Bedrock with the GPT-OSS 20B model as the primary LLM.
+The main use case is answering customer questions about a fictional SaaS product called "DataRocket".
+
+About DataRocket:
+- DataRocket is a cloud analytics platform for small and medium businesses.
+- It connects to common data sources like PostgreSQL, MySQL, and Google Sheets.
+- Typical users are non-technical business analysts who want dashboards and simple SQL-free reports.
+- Data is refreshed every 15 minutes by default.
+
+Product features:
+- Dashboards: Users can create interactive dashboards with charts and tables.
+- Alerts: Users can set up email alerts when metrics cross a threshold.
+- Team workspaces: Multiple users can collaborate in the same workspace.
+- Exports: Users can export data to CSV or schedule weekly PDF reports.
+
+Pricing:
+- Free tier: Up to 3 dashboards, 1 workspace, and 1 data source.
+- Pro tier: Unlimited dashboards and workspaces, priority support, and up to 10 data sources.
+- Enterprise tier: Custom SLAs, SSO, dedicated support, and custom data limits.
+
+Support policies:
+- Support is available Monday to Friday, 9:00–18:00 in the Europe/Berlin time zone.
+- Average response time for Pro users is under 4 business hours.
+- Outages and incidents are posted on the status page within 30 minutes.
+
+Chatbot behavior guidelines:
+- The assistant should answer questions based on this document when relevant.
+- If the user asks about DataRocket features, pricing, or support, use this information.
+- If the answer is not in this document, the assistant may answer from general knowledge,
+  but should not invent specific details about pricing or SLAs.
+- The assistant should not mention that it is using an internal knowledge base file.
