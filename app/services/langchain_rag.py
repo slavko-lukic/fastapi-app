@@ -1,7 +1,9 @@
 from pathlib import Path
+from typing import Any, Dict
 
 from botocore.client import BaseClient
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 
 from app.core.config import Settings
 from app.schemas.chat import ChatRequest, ChatResponse
@@ -41,13 +43,49 @@ prompt = ChatPromptTemplate.from_messages(
 )
 
 
+def _build_doc_chain(client: BaseClient, settings: Settings) -> RunnableLambda:
+    """
+    Build a small multi-step LangChain pipeline:
+
+      1) Start from the raw question.
+      2) Add the loaded document as a 'context' field.
+      3) Apply the ChatPromptTemplate using {context, question}.
+      4) Call Bedrock via our existing generate_reply service.
+    """
+
+    def _add_context(inputs: Dict[str, Any]) -> Dict[str, Any]:
+        # Inputs should contain {"question": "..."}; we enrich with the doc content.
+        return {**inputs, "context": DOC_CONTENT}
+
+    add_context = RunnableLambda(_add_context)
+
+    async def _call_bedrock(prompt_value: Any) -> str:
+        # ChatPromptTemplate returns a PromptValue; turn it into text
+        if hasattr(prompt_value, "to_string"):
+            message_text = prompt_value.to_string()
+        else:
+            message_text = str(prompt_value)
+
+        request = ChatRequest(message=message_text)
+        response = await generate_reply(request, client, settings)
+        return response.reply
+
+    bedrock_step = RunnableLambda(_call_bedrock)
+
+    # A true "chain": input dict -> add_context -> prompt -> bedrock_step
+    chain = RunnablePassthrough() | add_context | prompt | bedrock_step
+    return chain
+
+
 async def answer_with_doc(
     request: ChatRequest, client: BaseClient, settings: Settings
 ) -> ChatResponse:
     """
-    Use LangChain's prompt template to inject a local document as context,
-    then delegate the final call to our existing Bedrock service.
+    Use a LangChain Runnable pipeline that:
+      - attaches the project document as context
+      - formats a chat prompt
+      - calls Bedrock and returns the reply
     """
-    formatted = prompt.format(context=DOC_CONTENT, question=request.message)
-    wrapped_request = ChatRequest(message=formatted)
-    return await generate_reply(wrapped_request, client, settings)
+    chain = _build_doc_chain(client, settings)
+    reply_text = await chain.ainvoke({"question": request.message})
+    return ChatResponse(reply=reply_text)
